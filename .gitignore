@@ -1,0 +1,32 @@
+# ignore The python virtual environment
+.venv/
+# ignore the python cache
+__pycache__/
+# ignore the python bytecode
+*.pyc
+# ignore the python egg
+*.egg
+# ignore the python egg-info
+*.egg-info/
+# ignore the python distribution
+*.dist-info/
+# ignore the python build
+build/
+# ignore the python dist
+dist/
+# ignore the python coverage
+.coverage
+# ignore the python coverage html
+htmlcov/
+# ignore the python test cache
+.tox/
+# ignore the python test results
+nosetests.xml
+# ignore the python test coverage
+.coverage.*
+# ignore the python test results
+*.cover
+# ignore the python test results
+*.log
+# ignore the python test results
+*.test
