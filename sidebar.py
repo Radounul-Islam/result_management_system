@@ -1,5 +1,4 @@
 
-from http.client import ImproperConnectionState
 import sys
 from PyQt5.QtWidgets import QListWidget, QApplication
 from PyQt5.QtGui import QCursor

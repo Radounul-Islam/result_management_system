@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCursor
-import sys
 import sqlite3
 
 
@@ -256,7 +255,8 @@ class StudentReportUI(QWidget):
         
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
+    import sys
+    app = QApplication([])
     window = StudentReportUI()
     window.show()
     sys.exit(app.exec_())

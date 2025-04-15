@@ -1,8 +1,8 @@
-import sys
+
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit, QTextEdit,
     QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout,
-    QHBoxLayout, QGridLayout, QHeaderView, QMessageBox
+    QHBoxLayout, QGridLayout, QMessageBox
 )
 from PyQt5.QtCore import Qt
 import sqlite3
@@ -13,8 +13,6 @@ class CourseManager(QWidget):
         self.button_clicked()
         self.load_courses()
        
-       
-
 
     def initUI(self):
         self.setStyleSheet(self.get_stylesheet())  # Apply CSS
@@ -358,6 +356,7 @@ class CourseManager(QWidget):
 
 # Run Application
 if __name__ == "__main__":
+    import sys
     app = QApplication(sys.argv)
     window = CourseManager()
 

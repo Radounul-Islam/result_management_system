@@ -5,6 +5,8 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget,  QHBoxLayout,
     QLabel, QStackedWidget, QVBoxLayout, QMessageBox, QPushButton
 )
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QCursor
 
 from dashboard import DashBoardWidget
 from report import StudentReportUI
@@ -61,7 +63,6 @@ class StudentManagementUI(QMainWindow):
             #cc0000;
            
          }
-        
 
         """
     
@@ -110,6 +111,10 @@ class StudentManagementUI(QMainWindow):
         self.exit_button = QPushButton("Exit")
         self.exit_button.clicked.connect(self.exit_button_clicked)
         self.exit_button.setObjectName("ExitButton")
+        self.exit_button.setObjectName("ExitButton")
+        self.exit_button.setCursor(QCursor(Qt.PointingHandCursor))
+        
+
         buttons_layout.addWidget(self.exit_button)
 
         # Dashboard Page

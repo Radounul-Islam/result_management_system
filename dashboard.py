@@ -1,6 +1,5 @@
 
 import sqlite3
-import sys
 from PyQt5.QtWidgets import (
     QApplication,QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QFrame, QSizePolicy, QPushButton, QMessageBox
@@ -172,6 +171,7 @@ class DashBoardWidget(QWidget):
 
 
 def main()-> None:
+    import sys
     app = QApplication([])
     dashboard = DashBoardWidget()
     dashboard.show()
