@@ -1,10 +1,15 @@
 import sys
+import sqlite3
+from xml.etree.ElementTree import QName
+
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout,
-    QHBoxLayout, QGridLayout, QComboBox, QScrollArea, QFrame, QSizePolicy
+    QHBoxLayout, QGridLayout, QComboBox, QScrollArea, QFrame, QSizePolicy, 
+    QMessageBox
 )
 from PyQt5.QtGui import QPixmap, QCursor
 from PyQt5.QtCore import Qt
+
 
 
 class StudentResultPage(QWidget):
@@ -44,8 +49,13 @@ class StudentResultPage(QWidget):
         self.cmb_student = QComboBox()
         self.cmb_student.setCursor(QCursor(Qt.PointingHandCursor))
         self.cmb_student.setObjectName("studentComboBox")
-        self.cmb_student.addItems(["Select", "Student 1", "Student 2", "Student 3"])
+        self.cmb_student.addItems(self.get_stuent_rolls())
+        self.cmb_student.setEditable(True)  # Make it editable
+
+
+       
         
+
          # Placeholder search button
         self.btn_search = QPushButton("Search")
         self.btn_search.setCursor(QCursor(Qt.PointingHandCursor))
@@ -54,11 +64,12 @@ class StudentResultPage(QWidget):
         # Student Name
         self.lbl_name = QLabel("Name")
         self.txt_name = QLineEdit()
+        self.txt_name.setReadOnly(True)  # Make it read-only
 
         # Course Name
         self.lbl_course = QLabel("Course")
         self.txt_course = QLineEdit()
-
+        self.txt_course.setReadOnly(True)  # Make it read-only
         # Marks Obtained
         self.lbl_marks_obtained = QLabel("Marks Obtained")
         self.txt_marks_obtained = QLineEdit()
@@ -67,10 +78,15 @@ class StudentResultPage(QWidget):
         self.lbl_full_marks = QLabel("Full Marks")
         self.txt_full_marks = QLineEdit()
 
-        # Submit & Clear Buttons
+        # Submit , Clear & Update Buttons
+        self.btn_update = QPushButton("Update")
+        self.btn_update.setCursor(QCursor(Qt.PointingHandCursor))
+        self.btn_update.setObjectName("updateButton")
         self.btn_submit = QPushButton("Submit")
         self.btn_submit.setObjectName("submitButton")
         self.btn_clear = QPushButton("Clear")
+        self.btn_clear.setObjectName("clearButton")
+        self.btn_update.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_clear.setCursor(QCursor(Qt.PointingHandCursor))
         self.btn_submit.setCursor(QCursor(Qt.PointingHandCursor))
 
@@ -111,6 +127,7 @@ class StudentResultPage(QWidget):
         button_layout = QHBoxLayout()
         button_layout.addWidget(self.btn_submit)
         button_layout.addWidget(self.btn_clear)
+        button_layout.addWidget(self.btn_update)
 
         # Content Layout
         content_layout = QHBoxLayout()
@@ -129,17 +146,102 @@ class StudentResultPage(QWidget):
         main_layout.addLayout(button_layout)
 
 
+
+    
     def buttons_connect(self):
         self.btn_search.clicked.connect(self.load_student_details)
         self.btn_clear.clicked.connect(self.clear_fields)
         self.btn_submit.clicked.connect(self.submit_result)
+        self.btn_update.clicked.connect(self.update_result)
 
+
+    def get_stuent_rolls(self):
+        con = sqlite3.connect("rms.db")
+        cur = con.cursor()
+        students = []
+        try:
+            cur.execute("SELECT roll FROM student")
+            rows = cur.fetchall()
+            for row in rows:
+                students.append(row[0])
+        except sqlite3.Error as e:
+            print(f"Error fetching student rolls: {e}")
+        finally:
+            con.close()
+
+        return students
+            
+
+    def update_result(self):
+        con = sqlite3.connect("rms.db")
+        cur = con.cursor()
+        try:
+            roll_no = self.cmb_student.currentText().strip()
+            name = self.txt_name.text().strip()
+            course = self.txt_course.text().strip()
+            marks_obtained = self.txt_marks_obtained.text().strip()
+            full_marks = self.txt_full_marks.text().strip()
+
+            if not roll_no or not name or not course or not marks_obtained or not full_marks:
+                QMessageBox.warning(self, "Input Error", "Please fill all fields.")
+                return
+
+            # Update result table   
+            try:
+                percentage = (int(marks_obtained) / int(full_marks)) * 100
+            except ZeroDivisionError:
+                QMessageBox.warning(self, "Input Error", "Full marks cannot be zero.")
+                return
+            except ValueError:
+                QMessageBox.warning(self, "Input Error", "Please enter valid numbers for marks.")
+                return
+            percentage = round(percentage, 2)  # Round to 2 decimal places
+            percentage = str(percentage) + "%"
+            cur.execute("UPDATE result SET name=?, course=?, marks_ob=?, full_marks=?, per=? WHERE roll=?",
+                        (name, course, marks_obtained, full_marks, percentage, roll_no))
+            con.commit()
+            if cur.rowcount == 0:
+                QMessageBox.warning(self, "Not Found", "No result found for this roll number.")
+                return
+            # Clear fields after update
+            self.txt_name.clear()
+            self.txt_course.clear()
+            QMessageBox.information(self, "Success", "Result updated successfully.")
+        except sqlite3.Error as e:
+            print(f"Error updating result: {e}")
+        finally:
+            con.close()
        
     def load_student_details(self):
-        pass
+        con = sqlite3.connect("rms.db")
+        cur = con.cursor()
+        try:
+            roll_no = self.cmb_student.currentText().strip()
+            if not roll_no:
+                self.txt_name.clear()
+                self.txt_course.clear()
+                return
+            cur.execute("SELECT name, course FROM student WHERE roll=?", (roll_no,))
+            student_data = cur.fetchone()
+            if student_data:
+                self.txt_name.setText(student_data[0])
+                self.txt_course.setText(student_data[1])
+            else:
+                QMessageBox.warning(self, "Not Found", "No student found with this roll number.")
+                # Clear fields if no student found
+                self.txt_name.clear()
+                self.txt_course.clear()
+        except sqlite3.Error as e:
+            print(f"Error loading student details: {e}")
+        finally:
+            con.close()
+        
        
-    def search_student(self):
-        pass
+    def update_student_combo(self):
+        self.cmb_student.clear()
+        self.cmb_student.addItems(self.get_stuent_rolls())
+        
+        
 
     def clear_fields(self):
         self.cmb_student.setCurrentIndex(0)
@@ -149,7 +251,43 @@ class StudentResultPage(QWidget):
         self.txt_full_marks.clear()
 
     def submit_result(self):
-        pass
+        con = sqlite3.connect("rms.db")
+        cur = con.cursor()
+        try:
+            roll_no = self.cmb_student.currentText().strip()
+            name = self.txt_name.text().strip()
+            course = self.txt_course.text().strip()
+            marks_obtained = self.txt_marks_obtained.text().strip()
+            full_marks = self.txt_full_marks.text().strip()
+
+            if not roll_no or not name or not course or not marks_obtained or not full_marks:
+                QMessageBox.warning(self, "Input Error", "Please fill all fields.")
+                return
+        
+            # Insert into result table
+            try:
+                percentage = (int(marks_obtained) / int(full_marks)) * 100
+            except ZeroDivisionError:
+                QMessageBox.warning(self, "Input Error", "Full marks cannot be zero.")
+                return
+            except ValueError:
+                QMessageBox.warning(self, "Input Error", "Please enter valid numbers for marks.")
+                return
+            percentage = round(percentage, 2)  # Round to 2 decimal places
+            percentage = str(percentage) + "%"
+            cur.execute("INSERT INTO result (roll, name, course, marks_ob, full_marks, per) VALUES (?, ?, ?, ?, ?, ?)",
+                        (roll_no, name, course, marks_obtained, full_marks, percentage))
+            con.commit()
+            QMessageBox.information(self, "Success", "Result submitted successfully.")
+            self.txt_name.clear()
+            self.txt_course.clear()
+            self.cmb_student.setFocus()
+
+        except sqlite3.Error as e:
+            print(f"Error submitting result: {e}")
+        finally:
+            con.close()
+        
 
     def get_stylesheet(self):
         return """
@@ -207,10 +345,6 @@ class StudentResultPage(QWidget):
             font-size: 14px;
         }
 
-        QPushButton:hover {
-            background-color: #005A9E;
-        }
-
         QPushButton#submitButton {
             background-color: #5CB85C;
         }
@@ -220,11 +354,25 @@ class StudentResultPage(QWidget):
         }
 
         QPushButton#clearButton {
-            background-color: #6C757D;
+            background-color: #6c757d;
         }
 
         QPushButton#clearButton:hover {
-            background-color: #5A6268;
+            background-color: #5a6268;
+        }
+        QPushButton#updateButton {
+            background-color: #007BFF;
+        }
+        QPushButton#updateButton:hover {
+            background-color: #0056b3;
+        }
+        QPushButton#searchButton {
+            background-color: #0078D7;
+           
+           
+        }
+        QPushButton#searchButton:hover {
+            background-color: #0056b3;
         }
 
         QFrame#formFrame {

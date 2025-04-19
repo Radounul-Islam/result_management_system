@@ -58,6 +58,7 @@ class StudentDetailsUI(QWidget):
         self.course_combo = QComboBox()
         self.course_combo.setCursor(QCursor(Qt.PointingHandCursor))
         self.course_combo.addItems(["Select"] + self.get_courses())
+       
 
         self.state_input = QLineEdit()
         self.city_input = QLineEdit()
@@ -182,9 +183,15 @@ class StudentDetailsUI(QWidget):
         self.pin_input.clear()
         self.address_input.clear()
         self.roll_input.setFocus()
-        # self.table.clearContents()
-        # self.table.setRowCount(0)
-        
+        # for updating the course combo box
+     
+
+    
+    def update_course_combo(self):
+        # Add items to combo boxes if needed
+        self.course_combo.addItems(["Select"] + self.get_courses())
+    
+
     
     def save_student(self):
         # Implement save functionality

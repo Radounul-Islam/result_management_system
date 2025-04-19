@@ -141,7 +141,7 @@ class StudentManagementUI(QMainWindow):
         # Handle Sidebar Clicks
         self.sidebar.currentRowChanged.connect(self.pages.setCurrentIndex)
         
-       
+
         
 if __name__ == "__main__":
     app = QApplication(sys.argv)
