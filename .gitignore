@@ -30,3 +30,5 @@ nosetests.xml
 *.log
 # ignore the python test results
 *.test
+# Ignore the database
+*.db
