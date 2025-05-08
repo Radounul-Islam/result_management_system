@@ -17,13 +17,7 @@ def create_db():
 if __name__=="__main__":
     create_db()
     print("Database created successfully")
-    con = sqlite3.connect("rms.db")
-    cur = con.cursor()
-    cur.execute("INSERT INTO course (name, duration, charges, description) VALUES ('Python', '3 months', '20000', 'Python programming language')")
-    cur.execute("INSERT INTO student(roll, name, email, gender, dob, contact, admission, course, state, city, pin, address) VALUES ('1001', 'John Doe', 'john.doe@example.com', 'Male', '1995-05-15', '1234567890', '2023-01-10', 'Python', 'California', 'Los Angeles', '90001', '123 Main St')")
-    cur.execute("INSERT INTO result(roll, name, course, marks_ob, full_marks, per) VALUES ('1', 'John Doe', 'Python', '85', '100', '85')")
-    con.commit()
-    con.close()
+    
     
 
 
