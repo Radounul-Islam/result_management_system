@@ -1,6 +1,6 @@
 import sys
 import sqlite3
-from xml.etree.ElementTree import QName
+
 
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout,
@@ -67,9 +67,13 @@ class StudentResultPage(QWidget):
         self.txt_name.setReadOnly(True)  # Make it read-only
 
         # Course Name
-        self.lbl_course = QLabel("Course")
-        self.txt_course = QLineEdit()
-        self.txt_course.setReadOnly(True)  # Make it read-only
+        self.lbl_course = QLabel("Select Course")
+        self.txt_course = QComboBox()
+        self.txt_course.setCursor(QCursor(Qt.PointingHandCursor))
+        self.txt_course.setObjectName("CourseCombo")
+        self.txt_course.addItems(self.get_all_courses())
+ 
+       
         # Marks Obtained
         self.lbl_marks_obtained = QLabel("Marks Obtained")
         self.txt_marks_obtained = QLineEdit()
@@ -160,7 +164,7 @@ class StudentResultPage(QWidget):
         cur = con.cursor()
         students = []
         try:
-            cur.execute("SELECT roll FROM student")
+            cur.execute("SELECT DISTINCT roll FROM student")
             rows = cur.fetchall()
             for row in rows:
                 students.append(row[0])
@@ -171,6 +175,23 @@ class StudentResultPage(QWidget):
 
         return students
             
+   
+    def get_all_courses(self):
+        con = sqlite3.connect("rms.db")
+        cur = con.cursor()
+        courses = []
+        try:
+            cur.execute(f"SELECT name FROM course")
+            rows = cur.fetchall()
+            for row in rows:
+                courses.append(row[0])
+        except sqlite3.Error as e:
+            print(f"Error fetching student course: {e}")
+        finally:
+            con.close()
+        
+        return courses
+
 
     def update_result(self):
         con = sqlite3.connect("rms.db")
@@ -178,7 +199,7 @@ class StudentResultPage(QWidget):
         try:
             roll_no = self.cmb_student.currentText().strip()
             name = self.txt_name.text().strip()
-            course = self.txt_course.text().strip()
+            course = self.txt_course.currentText().strip()
             marks_obtained = self.txt_marks_obtained.text().strip()
             full_marks = self.txt_full_marks.text().strip()
 
@@ -197,15 +218,15 @@ class StudentResultPage(QWidget):
                 return
             percentage = round(percentage, 2)  # Round to 2 decimal places
             percentage = str(percentage) + "%"
-            cur.execute("UPDATE result SET name=?, course=?, marks_ob=?, full_marks=?, per=? WHERE roll=?",
-                        (name, course, marks_obtained, full_marks, percentage, roll_no))
+            cur.execute("UPDATE result SET name=?, marks_ob=?, full_marks=?, per=? WHERE roll=? and course = ?",
+                        (name, marks_obtained, full_marks, percentage, roll_no, course))
             con.commit()
             if cur.rowcount == 0:
                 QMessageBox.warning(self, "Not Found", "No result found for this roll number.")
                 return
             # Clear fields after update
             self.txt_name.clear()
-            self.txt_course.clear()
+            
             QMessageBox.information(self, "Success", "Result updated successfully.")
         except sqlite3.Error as e:
             print(f"Error updating result: {e}")
@@ -217,38 +238,33 @@ class StudentResultPage(QWidget):
         cur = con.cursor()
         try:
             roll_no = self.cmb_student.currentText().strip()
+            course = self.txt_course.currentText().strip()
             if not roll_no:
                 self.txt_name.clear()
-                self.txt_course.clear()
+    
                 return
-            cur.execute("SELECT name, course FROM student WHERE roll=?", (roll_no,))
+            cur.execute("SELECT name, course FROM student WHERE roll=? and course=?", (roll_no, course))
             student_data = cur.fetchone()
             if student_data:
                 self.txt_name.setText(student_data[0])
-                self.txt_course.setText(student_data[1])
+               
             else:
-                QMessageBox.warning(self, "Not Found", "No student found with this roll number.")
+                QMessageBox.warning(self, "Not Found", f"No student found with this roll number and course {course}")
                 # Clear fields if no student found
                 self.txt_name.clear()
-                self.txt_course.clear()
+
         except sqlite3.Error as e:
             print(f"Error loading student details: {e}")
         finally:
             con.close()
         
-       
-    def update_student_combo(self):
-        self.cmb_student.clear()
-        self.cmb_student.addItems(self.get_stuent_rolls())
-        
-        
 
     def clear_fields(self):
         self.cmb_student.setCurrentIndex(0)
         self.txt_name.clear()
-        self.txt_course.clear()
         self.txt_marks_obtained.clear()
         self.txt_full_marks.clear()
+        self.txt_course.setCurrentIndex(0)
 
     def submit_result(self):
         con = sqlite3.connect("rms.db")
@@ -256,7 +272,7 @@ class StudentResultPage(QWidget):
         try:
             roll_no = self.cmb_student.currentText().strip()
             name = self.txt_name.text().strip()
-            course = self.txt_course.text().strip()
+            course = self.txt_course.currentText().strip()
             marks_obtained = self.txt_marks_obtained.text().strip()
             full_marks = self.txt_full_marks.text().strip()
 
@@ -280,11 +296,11 @@ class StudentResultPage(QWidget):
             con.commit()
             QMessageBox.information(self, "Success", "Result submitted successfully.")
             self.txt_name.clear()
-            self.txt_course.clear()
+            self.txt_course.setCurrentIndex(0)
             self.cmb_student.setFocus()
 
         except sqlite3.Error as e:
-            print(f"Error submitting result: {e}")
+           QMessageBox.warning(self, "Database Error!", f"{e}")
         finally:
             con.close()
         

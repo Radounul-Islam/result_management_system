@@ -12,6 +12,7 @@ from PyQt5.QtCore import Qt
 
 
 
+
 class StudentDetailsUI(QWidget):
     def __init__(self):
         super().__init__()
@@ -57,7 +58,8 @@ class StudentDetailsUI(QWidget):
 
         self.course_combo = QComboBox()
         self.course_combo.setCursor(QCursor(Qt.PointingHandCursor))
-        self.course_combo.addItems(["Select"] + self.get_courses())
+        self.courses = self.get_courses()
+        self.course_combo.addItems(["All"] + self.courses)
        
 
         self.state_input = QLineEdit()
@@ -186,13 +188,6 @@ class StudentDetailsUI(QWidget):
         # for updating the course combo box
      
 
-    
-    def update_course_combo(self):
-        # Add items to combo boxes if needed
-        self.course_combo.addItems(["Select"] + self.get_courses())
-    
-
-    
     def save_student(self):
         # Implement save functionality
         
@@ -208,21 +203,32 @@ class StudentDetailsUI(QWidget):
         city = self.city_input.text().strip()
         pin = self.pin_input.text().strip()
         address = self.address_input.text().strip()
+        
         # Add your database save logic here
         if roll == "":
             QMessageBox.warning(self, "Input Error", "Roll No. cannot be empty.")
             return
-   
         
-    
+     
+            
+
         con = sqlite3.connect(database="rms.db")
         cursor = con.cursor()
         try:
-            cursor.execute(
-                "INSERT INTO student(roll, name, email, gender, dob, contact, admission, course, state, city, pin, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
-                 (roll, name, email, gender, dob, contact, admission, course, state, city, pin, address)
-            )
-            con.commit()
+            if course == "All":
+                for course in self.courses: 
+                    cursor.execute(
+                        "INSERT INTO student(roll, name, email, gender, dob, contact, admission, course, state, city, pin, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+                        (roll, name, email, gender, dob, contact, admission, course, state, city, pin, address)
+                    )
+                    con.commit()
+            else:
+                cursor.execute(
+                        "INSERT INTO student(roll, name, email, gender, dob, contact, admission, course, state, city, pin, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+                        (roll, name, email, gender, dob, contact, admission, course, state, city, pin, address)
+                    )
+                con.commit()
+
             QMessageBox.information(self, "Success", "Student details saved successfully.")
             self.load_students()
             
@@ -249,20 +255,26 @@ class StudentDetailsUI(QWidget):
         if roll == "":
             QMessageBox.warning(self, "Input Error", "Roll No. cannot be empty.")
             return
-
-    
-        
+       
         
         con = sqlite3.connect(database="rms.db")
         cursor = con.cursor()
         # Check if the student exists
         try:
+            if course == "All":
+                cursor.execute(
+                    "UPDATE student SET roll = ?, name = ?, email = ?, gender = ?, dob = ?, contact = ?, admission = ?, state = ?, city = ?, pin = ?, address = ? WHERE roll = ?", 
+                    (roll, name, email, gender, dob, contact, admission, state, city, pin, address, roll)
+                )
+                con.commit()   
 
-            cursor.execute(
-                "UPDATE student SET roll = ?, name = ?, email = ?, gender = ?, dob = ?, contact = ?, admission = ?, course = ?, state = ?, city = ?, pin = ?, address = ? WHERE roll = ?", 
-                 (roll, name, email, gender, dob, contact, admission, course, state, city, pin, address, roll)
-            )
-            con.commit()    
+            else:
+                cursor.execute(
+                    "UPDATE student SET roll = ?, name = ?, email = ?, gender = ?, dob = ?, contact = ?, admission = ?, state = ?, city = ?, pin = ?, address = ? WHERE roll = ? and course = ?", 
+                    (roll, name, email, gender, dob, contact, admission, state, city, pin, address, roll, course)
+                )
+                con.commit()   
+
             QMessageBox.information(self, "Success", "Student details updated successfully.")
             self.load_students()
             
@@ -275,23 +287,41 @@ class StudentDetailsUI(QWidget):
         
     def delete_student(self):
         roll = self.roll_input.text().strip()
+        course = self.course_combo.currentText()
+
+        # Add your database save logic here
         if roll == "":
             QMessageBox.warning(self, "Input Error", "Roll No. cannot be empty.")
             return
-       
+    
         con = sqlite3.connect(database="rms.db")
         cursor = con.cursor()
         try:
-            option = QMessageBox.question(
+           
+            if course == "All":
+                option = QMessageBox.question(
                 self, "Confirm Delete",
                 f"Are you sure you want to delete student roll = {roll}?",
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No
             )
-            if option == QMessageBox.No:
-                return
-            cursor.execute("DELETE FROM student WHERE roll = ?", (roll,))
+                if option == QMessageBox.No:
+                    return
+                cursor.execute("DELETE FROM student WHERE roll = ?", (roll,))
+            else:
+                
+                option = QMessageBox.question(
+                self, "Confirm Delete",
+                f"Are you sure you want to delete student roll = {roll} course = {course}?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+                if option == QMessageBox.No:
+                    return
+                cursor.execute("DELETE FROM student WHERE roll = ? and course = ?", (roll, course))
+
             con.commit()
+
             self.load_students()
         except sqlite3.Error as e:
             QMessageBox.critical(self, "Database Error", f"An error occurred: {e}")
@@ -301,6 +331,7 @@ class StudentDetailsUI(QWidget):
     # Function for search student  
     def search_student(self):
         roll = self.roll_field.text().strip()
+        
         if roll == "":
             QMessageBox.warning(self, "Input Error", "Roll No. cannot be empty.")
             return
@@ -335,7 +366,25 @@ class StudentDetailsUI(QWidget):
             
 
 
+    def get_courses(self):
+        # Implement logic to fetch courses from the database
+        # and populate the course_combo box.
+        course_list = []
+        con = sqlite3.connect("rms.db")
+        cursor = con.cursor()
+        try:
+            cursor.execute("SELECT name FROM course")
+            courses = cursor.fetchall()
+            for course in courses:
+                course_list.append(course[0])
+            
+        
+        except sqlite3.Error as e:
+            QMessageBox.critical(self, "Database Error", f"An error occurred: {e}")
+        finally:
+            con.close()
 
+        return course_list
 
 
    
@@ -498,25 +547,7 @@ class StudentDetailsUI(QWidget):
     
      """
     # Function to fetch courses from the database
-    def get_courses(self):
-        # Implement logic to fetch courses from the database
-        # and populate the course_combo box.
-        course_list = []
-        con = sqlite3.connect("rms.db")
-        cursor = con.cursor()
-        try:
-            cursor.execute("SELECT name FROM course")
-            courses = cursor.fetchall()
-            for course in courses:
-                course_list.append(course[0])
-            
-        
-        except sqlite3.Error as e:
-            QMessageBox.critical(self, "Database Error", f"An error occurred: {e}")
-        finally:
-            con.close()
-
-        return course_list
+    
 
     
 if __name__ == "__main__":

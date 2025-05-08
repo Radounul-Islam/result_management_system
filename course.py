@@ -157,7 +157,7 @@ class CourseManager(QWidget):
        # Set focus back to course name field
 
     def delete_course(self):
-        course_name = self.txt_course_name.text()
+        course_name = self.txt_course_name.text().strip()
         if not course_name:
             QMessageBox.warning(self, "Input Error", "Please enter the course name to delete.")
             return
@@ -181,7 +181,10 @@ class CourseManager(QWidget):
             QMessageBox.critical(self, "Database Error", f"An error occurred: {e}")
         finally:
             con.close()
+
+            
     def update_course(self):
+        
         course_name = self.txt_course_name.text().strip()
         duration = self.txt_duration.text().strip()
         charges = self.txt_charges.text().strip()

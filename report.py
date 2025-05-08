@@ -1,6 +1,7 @@
+from queue import PriorityQueue
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit, QPushButton, QTableWidget,
-    QVBoxLayout, QHBoxLayout, QHeaderView, QTableWidgetItem, QMessageBox
+    QVBoxLayout, QHBoxLayout, QHeaderView, QTableWidgetItem, QMessageBox, QComboBox
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCursor
@@ -11,9 +12,223 @@ class StudentReportUI(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Student Result Management System")
-
         self.initUI()
         self.buttons_connect()
+
+    
+
+    def initUI(self):
+        self.setStyleSheet(self.load_styles())
+        main_layout = QVBoxLayout()
+
+
+        # Header
+        header = QLabel("View Student Results")
+        header.setAlignment(Qt.AlignCenter)
+        header.setObjectName("HeaderLabel") # For styling header using css
+        main_layout.addWidget(header)
+
+        # Search Section
+        search_layout = QHBoxLayout()
+        search_label = QLabel("Roll No")
+        course_label = QLabel("Course")
+
+        self.search_input = QLineEdit()
+        self.search_input.setFixedWidth(150)
+
+
+        self.course_combo = QComboBox()
+        self.course_combo.setFixedWidth(100)
+        self.course_combo.setCursor(QCursor(Qt.PointingHandCursor))
+        self.course_combo.addItems(["All"] + self.get_courses())
+       
+        self.search_button = QPushButton("Search")
+        self.clear_button = QPushButton("Clear")
+        self.clear_button.setObjectName("ClearButton")
+        self.search_button.setCursor(QCursor(Qt.PointingHandCursor))
+        self.clear_button.setCursor(QCursor(Qt.PointingHandCursor))
+        
+
+        search_layout.addStretch()
+        search_layout.addWidget(search_label)
+        search_layout.addSpacing(10)
+        search_layout.addWidget(self.search_input)
+        search_layout.addWidget(course_label)
+        search_layout.addWidget(self.course_combo)
+        search_layout.addWidget(self.search_button)
+        search_layout.addWidget(self.clear_button)
+        search_layout.addStretch()
+
+        main_layout.addLayout(search_layout)
+
+        # Table
+        self.table = QTableWidget()
+        self.table.setColumnCount(6)
+        self.table.setHorizontalHeaderLabels([
+            "Roll No", "Name", "Course", "Marks Obtained", "Total Marks", "Percentage"
+        ])
+        #self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.setColumnWidth(0, 100)
+        self.table.setColumnWidth(1, 250)
+        self.table.setColumnWidth(2, 250)
+        self.table.setColumnWidth(3,150)
+        self.table.setColumnWidth(4, 150)
+        self.table.setColumnWidth(5, 150)
+        self.table.setObjectName("ResultTable") # For styling table
+        self.table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.table.setSelectionMode(QTableWidget.SingleSelection)
+        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
+      
+   
+        self.table.setFixedHeight(200)
+        main_layout.addWidget(self.table)
+
+        # Delete Button
+        self.delete_button = QPushButton("Delete")
+        self.delete_button.setObjectName("DeleteButton")
+        self.delete_button.setCursor(QCursor(Qt.PointingHandCursor))
+
+        delete_layout = QHBoxLayout()
+        delete_layout.addStretch()
+        delete_layout.addWidget(self.delete_button)
+        delete_layout.addStretch()
+
+        main_layout.addLayout(delete_layout)
+        self.setLayout(main_layout)
+
+
+
+    def get_courses(self):
+        # Implement logic to fetch courses from the database
+        # and populate the course_combo box.
+        course_list = []
+        con = sqlite3.connect("rms.db")
+        cursor = con.cursor()
+        try:
+            cursor.execute("SELECT name FROM course")
+            courses = cursor.fetchall()
+            for course in courses:
+                course_list.append(course[0])
+            
+        
+        except sqlite3.Error as e:
+            QMessageBox.critical(self, "Database Error", f"An error occurred: {e}")
+        finally:
+            con.close()
+
+        return course_list
+
+    def buttons_connect(self):
+        self.search_button.clicked.connect(self.search_student)
+        self.clear_button.clicked.connect(self.clear_search)
+        self.delete_button.clicked.connect(self.delete_student)
+
+    def search_student(self):
+        roll = self.search_input.text().strip()
+        course = self.course_combo.currentText().strip()
+
+        if not roll:
+            QMessageBox.warning(self, "Input Error", "Please enter a roll number.")
+            return
+        con = sqlite3.connect(database="rms.db")
+        cursor = con.cursor()
+        
+        try:
+            if course == "All":
+                cursor.execute("SELECT * FROM result WHERE roll =?", (roll,))
+                results = cursor.fetchall()
+                if results:
+                    self.load_table(results)
+                            
+                else:
+                    QMessageBox.warning(self, "Not Found", f"No student found with  roll number {roll}.")
+
+            else:
+                cursor.execute("SELECT * FROM result WHERE roll =? and course=?", (roll, course))
+                results = cursor.fetchall()
+                if results:
+                    self.load_table(results)
+                            
+                else:
+                    QMessageBox.warning(self, "Not Found", f"No student found with this roll {roll} course {course}.")
+                
+        except sqlite3.Error as e:
+            QMessageBox.critical(self, "Database Error", f"An error occurred: {e}")
+        finally:
+            con.close()
+
+    def load_table(self, data: list[tuple]):
+         self.table.clearContents()
+         self.table.setRowCount(0)
+         self.table.setRowCount(len(data))
+         for index , result in enumerate(data):
+            for i, value in enumerate(result):
+                item = QTableWidgetItem(str(value))
+                item.setFlags(Qt.ItemIsEnabled)
+                self.table.setItem(index, i, item)
+        
+              
+
+    def clear_search(self):
+        self.search_input.clear()
+        self.search_input.setFocus()
+        self.course_combo.setCurrentIndex(0)
+
+    def delete_student(self):
+        con = sqlite3.connect(database="rms.db")
+        cursor = con.cursor()
+        roll = self.search_input.text().strip()
+        course = self.course_combo.currentText().strip()
+        if not roll:
+            QMessageBox.warning(self, "Input Error", "Please enter a roll number.")
+            return
+        
+        try:
+            
+            if course == "All":
+                option = QMessageBox.question(
+                self, "Confirm Delete",
+                f"Are you sure you want to delete the result for roll number {roll}?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+                if option == QMessageBox.No:
+                    return
+                cursor.execute("DELETE  FROM result WHERE roll=?", (roll,))
+                con.commit()
+                self.table.clearContents()
+                self.table.setRowCount(0)
+
+            
+            else:
+                option = QMessageBox.question(
+                self, "Confirm Delete",
+                f"Are you sure you want to delete the result for roll number {roll} course {course}?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+                if option == QMessageBox.No:
+                    return
+
+                cursor.execute(f"DELETE  FROM result WHERE roll=? and course = ?", (roll, course))
+                con.commit()
+
+
+                cursor.execute("SELECT * FROM result WHERE roll =? ", (roll, ))
+                results = cursor.fetchall()
+                if results:
+                    self.load_table(results)
+                            
+                else:
+                    QMessageBox.warning(self, "Not Found", f"No results are available")
+       
+        except sqlite3.Error as e:
+            QMessageBox.critical(self, "Database Error", f"An error occurred: {e}")
+        finally:
+            con.close()
+        
+
+
 
     def load_styles(self):
         return """
@@ -46,19 +261,25 @@ class StudentReportUI(QWidget):
             font-family: Arial, sans-serif;
         }
 
-        QLineEdit {
-            background-color: #ffffe0;
-            padding: 5px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            color: #333;
-        }
-
-         QLineEdit:focus{
+        QLineEdit, QComboBox{
+        background-color: #ffffff;
+        border: 1px solid #cccccc;
+        padding: 5px;
+        border-radius: 3px;
+        color: #333;
+    }
+    QLineEdit:focus{
         border: 2px solid #007bff;
         background-color: #f0f8ff;
-        }
+    }
+    QComboBox::drop-down {
+        border: 1px solid #cccccc;
+        border-radius: 3px;
+    }
+    QComboBox::item {
+        background-color: #ffffff;
+        color: #333;
+    }
     
    
         QPushButton {
@@ -108,150 +329,6 @@ class StudentReportUI(QWidget):
         
     
         """
-
-    def initUI(self):
-        self.setStyleSheet(self.load_styles())
-        main_layout = QVBoxLayout()
-
-        main_layout.setSpacing(10)
-
-        # Header
-        header = QLabel("View Student Results")
-        header.setAlignment(Qt.AlignCenter)
-        header.setObjectName("HeaderLabel")
-        main_layout.addWidget(header)
-
-        # Search Section
-        search_layout = QHBoxLayout()
-        search_label = QLabel("Search By Roll No.")
-        self.search_input = QLineEdit()
-        self.search_input.setFixedWidth(150)
-
-        self.search_button = QPushButton("Search")
-        self.clear_button = QPushButton("Clear")
-        self.clear_button.setObjectName("ClearButton")
-        self.search_button.setCursor(QCursor(Qt.PointingHandCursor))
-        self.clear_button.setCursor(QCursor(Qt.PointingHandCursor))
-        
-
-        search_layout.addStretch()
-        search_layout.addWidget(search_label)
-        search_layout.addSpacing(10)
-        search_layout.addWidget(self.search_input)
-        search_layout.addWidget(self.search_button)
-        search_layout.addWidget(self.clear_button)
-        search_layout.addStretch()
-
-        main_layout.addLayout(search_layout)
-
-        # Table
-        self.table = QTableWidget()
-        self.table.setColumnCount(6)
-        self.table.setHorizontalHeaderLabels([
-            "Roll No", "Name", "Course", "Marks Obtained", "Total Marks", "Percentage"
-        ])
-        #self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table.setColumnWidth(0, 100)
-        self.table.setColumnWidth(1, 250)
-        self.table.setColumnWidth(2, 250)
-        self.table.setColumnWidth(3,150)
-        self.table.setColumnWidth(4, 150)
-        self.table.setColumnWidth(5, 150)
-        self.table.setObjectName("ResultTable")
-        self.table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.table.setSelectionMode(QTableWidget.SingleSelection)
-        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
-      
-   
-        self.table.setFixedHeight(200)
-        main_layout.addWidget(self.table)
-
-        # Delete Button
-        self.delete_button = QPushButton("Delete")
-        self.delete_button.setObjectName("DeleteButton")
-        self.delete_button.setCursor(QCursor(Qt.PointingHandCursor))
-
-        delete_layout = QHBoxLayout()
-        delete_layout.addStretch()
-        delete_layout.addWidget(self.delete_button)
-        delete_layout.addStretch()
-
-        main_layout.addLayout(delete_layout)
-        self.setLayout(main_layout)
-
-    def buttons_connect(self):
-        self.search_button.clicked.connect(self.search_student)
-        self.clear_button.clicked.connect(self.clear_search)
-        self.delete_button.clicked.connect(self.delete_student)
-
-    def search_student(self):
-        con = sqlite3.connect(database="rms.db")
-        cursor = con.cursor()
-        try:
-            roll_no = self.search_input.text().strip()
-            if not roll_no:
-                QMessageBox.warning(self, "Input Error", "Please enter a roll number.")
-                return
-            cursor.execute("SELECT * FROM result WHERE roll =?", (roll_no,))
-            result = cursor.fetchone()
-            if result:
-                self.table.clearContents()
-                self.table.setRowCount(0)
-                self.table.setRowCount(1)
-                for i, value in enumerate(result):
-                    if i !=  0:
-                        item = QTableWidgetItem(str(value))
-                        item.setFlags(Qt.ItemIsEnabled)
-                        self.table.setItem(0, i - 1, item)
-                        
-            else:
-                QMessageBox.warning(self, "Not Found", f"No student found with this roll number .")
-                
-        except sqlite3.Error as e:
-            QMessageBox.critical(self, "Database Error", f"An error occurred: {e}")
-        finally:
-            con.close()
-            self.search_input.clear()
-
-    def clear_search(self):
-        self.search_input.clear()
-        self.search_input.setFocus()
-
-    def delete_student(self):
-        con = sqlite3.connect(database="rms.db")
-        cursor = con.cursor()
-        try:
-            
-            if self.table.rowCount() == 0:
-                QMessageBox.warning(self, "Selection Error", "No student selected.")
-                return
-            selected_row = 0
-            roll_no = self.table.item(selected_row, 0).text().strip()
-
-            # for confirmation message
-            option = QMessageBox.question(
-                self, "Confirm Delete",
-                f"Are you sure you want to delete the result for roll number {roll_no}?",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
-            )
-            if option == QMessageBox.No:
-                return
-            # Delete the student result from the database
-            cursor.execute("DELETE FROM result WHERE roll=?", (roll_no,))
-            con.commit()
-            self.table.setRowCount(0)
-            self.table.clearContents()
-            self.search_input.clear()
-            self.search_input.setFocus()
-
-            # Show success message
-            QMessageBox.information(self, "Success", "Student result deleted successfully.")
-        except sqlite3.Error as e:
-            QMessageBox.critical(self, "Database Error", f"An error occurred: {e}")
-        finally:
-            con.close()
-        
         
 
 if __name__ == "__main__":

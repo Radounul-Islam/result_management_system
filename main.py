@@ -130,19 +130,25 @@ class StudentManagementUI(QMainWindow):
         self.report_page = StudentReportUI()
         # Settings Page (Placeholder)
         self.settings_page = QLabel("Settings Page")
-
-        pages = [self.dashboard_page, self.course_page, self.students_page,
-                  self.result_page, self.report_page, self.settings_page]
+        # Result Publication Page
+        self.result_publish_page = QLabel("Publish Result via Email")
+        self.page_classes = [DashBoardWidget, CourseManager, StudentDetailsUI, StudentResultPage, StudentReportUI, QLabel, QLabel]
+        # pages = [self.dashboard_page, self.course_page, self.students_page,
+        #           self.result_page, self.report_page, self.result_publish_page , self.settings_page]
         
         # Add pages to the stacked widget
-        for page in pages:
-            self.pages.addWidget(page)
+        for page in self.page_classes:
+            self.pages.addWidget(page())
         
         # Handle Sidebar Clicks
+        self.sidebar.currentRowChanged.connect(self.insert_new_widget)
         self.sidebar.currentRowChanged.connect(self.pages.setCurrentIndex)
         
 
+    def insert_new_widget(self, index):
+         self.pages.insertWidget(index, self.page_classes[index]())
         
+         
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = StudentManagementUI()

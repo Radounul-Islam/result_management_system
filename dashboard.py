@@ -12,7 +12,7 @@ class DashBoardWidget(QWidget):
         super().__init__()
         self.initUI()
         self.update_details()
-        self.buttons_clicked()
+        #self.buttons_clicked()
 
     def load_styles(self):
         return """
@@ -80,20 +80,7 @@ class DashBoardWidget(QWidget):
         border: none;
         font-weight: bold;
     }
-       
-
-    #loadBtn {
-        background-color: #28a745;
-        color: white;
-        padding: 5px;
-        border-radius: 3px;
-        font-size: 14px;
-    }
-    #loadBtn:hover {
-        background-color: #218838;
-    }
-
-        
+         
         """
     def initUI(self):
         self.setStyleSheet(self.load_styles())
@@ -104,11 +91,7 @@ class DashBoardWidget(QWidget):
         title.setFixedHeight(60)
         title.setAlignment(Qt.AlignCenter)
         dashboard_layout.addWidget(title)
-        # Load button
-        self.load_button = QPushButton("Load")
-        self.load_button.setCursor(QCursor(Qt.PointingHandCursor))
-        self.load_button.setObjectName("loadBtn")
-        dashboard_layout.addWidget(self.load_button)
+  
         
         # background Image
         self.lbl_image = QLabel()
@@ -144,23 +127,20 @@ class DashBoardWidget(QWidget):
         dashboard_layout.addWidget(stats_frame)
         self.setLayout(dashboard_layout)
 
-    def buttons_clicked(self):
-        self.load_button.clicked.connect(self.update_details)
-
-        # Add more button connections here if needed
+   
     def update_details(self):
         con = sqlite3.connect(database="rms.db")
         cur = con.cursor()
         try:
-            cur.execute("SELECT * FROM course")
-            cr = cur.fetchall()
-            self.student_count.setText(f"Total Courses:\n {len(cr)}")
-            cur.execute("SELECT * FROM student")
-            st = cur.fetchall()
-            self.attendance_rate.setText(f"Total Students:\n {len(st)}")
-            cur.execute("SELECT * FROM result")
-            rs = cur.fetchall()
-            self.avg_grades.setText(f"Total Results:\n {len(rs)}")
+            cur.execute("SELECT COUNT(DISTINCT cid)FROM course")
+            cr = cur.fetchone()
+            self.student_count.setText(f"Total Courses:\n {cr[0]}")
+            cur.execute("SELECT COUNT(DISTINCT roll) FROM student")
+            st = cur.fetchone()
+            self.attendance_rate.setText(f"Total Students:\n {st[0]}")
+            cur.execute("SELECT COUNT( * ) FROM result")
+            rs = cur.fetchone()
+            self.avg_grades.setText(f"Total Results:\n {rs[0]}")
             con.commit()
             con.close()
 
