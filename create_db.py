@@ -9,12 +9,12 @@ def create_db():
     con.commit()
     cur.execute("CREATE TABLE IF NOT EXISTS student(roll text ,name text,email text,gender text,dob text,contact text,admission text,course text,state text,city text,pin text,address text,  PRIMARY KEY (roll, course))")
     con.commit()
-    cur.execute("CREATE TABLE IF NOT EXISTS result(roll text,name text,course text,marks_ob text,full_marks text,per text, PRIMARY KEY (roll, course) )")
+    cur.execute("CREATE TABLE IF NOT EXISTS result(roll text,name text,course text,marks_ob text,full_marks text,per text, grade text, gpa text, cpga text, PRIMARY KEY (roll, course) )")
     con.commit()
     con.close()
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     create_db()
     print("Database created successfully")
     

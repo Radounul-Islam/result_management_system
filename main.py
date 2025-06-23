@@ -13,7 +13,7 @@ from report import StudentReportUI
 from result import StudentResultPage
 from sidebar import SidebarWidget
 from students import StudentDetailsUI
-
+from mail import MailSenderUI
 from create_db import create_db
 from course import CourseManager
 
@@ -117,25 +117,9 @@ class StudentManagementUI(QMainWindow):
 
         buttons_layout.addWidget(self.exit_button)
 
-        # Dashboard Page
-        self.dashboard_page = DashBoardWidget()
-        # Students Page
-        self.students_page = StudentDetailsUI()
         
-        # Course Page
-        self.course_page = CourseManager()
-        # Student Result Page
-        self.result_page = StudentResultPage()
-        # Student Report Page
-        self.report_page = StudentReportUI()
-        # Settings Page (Placeholder)
-        self.settings_page = QLabel("Settings Page")
-        # Result Publication Page
-        self.result_publish_page = QLabel("Publish Result via Email")
-        self.page_classes = [DashBoardWidget, CourseManager, StudentDetailsUI, StudentResultPage, StudentReportUI, QLabel, QLabel]
-        # pages = [self.dashboard_page, self.course_page, self.students_page,
-        #           self.result_page, self.report_page, self.result_publish_page , self.settings_page]
-        
+        self.page_classes = [DashBoardWidget, CourseManager, StudentDetailsUI, StudentResultPage, StudentReportUI, MailSenderUI, QLabel]
+      
         # Add pages to the stacked widget
         for page in self.page_classes:
             self.pages.addWidget(page())
@@ -146,7 +130,11 @@ class StudentManagementUI(QMainWindow):
         
 
     def insert_new_widget(self, index):
-         self.pages.insertWidget(index, self.page_classes[index]())
+        self.pages.insertWidget(index, self.page_classes[index]())
+        # Remove the widget at the index if it already exists  
+        if self.pages.count() > index + 1:
+            self.pages.removeWidget(self.pages.widget(index + 1))     
+       
         
          
 if __name__ == "__main__":

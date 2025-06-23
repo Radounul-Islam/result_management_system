@@ -1,3 +1,4 @@
+from math import ceil
 import sys
 import sqlite3
 
@@ -216,15 +217,26 @@ class StudentResultPage(QWidget):
             except ValueError:
                 QMessageBox.warning(self, "Input Error", "Please enter valid numbers for marks.")
                 return
-            percentage = round(percentage, 2)  # Round to 2 decimal places
+            percentage = ceil(percentage)  # Round to 2 decimal places
             percentage = str(percentage) + "%"
-            cur.execute("UPDATE result SET name=?, marks_ob=?, full_marks=?, per=? WHERE roll=? and course = ?",
-                        (name, marks_obtained, full_marks, percentage, roll_no, course))
+
+
+            gpa, grade = self.get_gpa_and_grade(int(percentage[:-1]))
+            
+            cur.execute("UPDATE result SET name=?, marks_ob=?, full_marks=?, per=?, grade=?, gpa=? WHERE roll=? and course = ?",
+                        (name, marks_obtained, full_marks, percentage, str(grade), str(gpa), roll_no, course))
+     
             con.commit()
+
             if cur.rowcount == 0:
                 QMessageBox.warning(self, "Not Found", "No result found for this roll number.")
                 return
             # Clear fields after update
+
+            self.calculate_and_update_cgpa(roll_no, cur)
+
+            con.commit()
+            
             self.txt_name.clear()
             
             QMessageBox.information(self, "Success", "Result updated successfully.")
@@ -232,7 +244,24 @@ class StudentResultPage(QWidget):
             print(f"Error updating result: {e}")
         finally:
             con.close()
-       
+
+    def calculate_and_update_cgpa(self, roll_no, cur):
+            course_list = self.get_courses()
+            cgpa = 0.0
+            cur.execute("SELECT course, gpa FROM result WHERE roll=?;", (roll_no,))
+            student_course = cur.fetchall()
+    
+            sum = 0.0
+            credits = 0.0
+            for course in student_course:
+                credits += course_list[course[0]]
+                sum += float(course[1]) * course_list[course[0]]
+            if credits > 0:
+                cgpa = sum / credits
+            cgpa = round(cgpa, 2)
+                  # Round to 2 decimal places
+            cur.execute("UPDATE result SET cpga=? WHERE roll=?", (cgpa, roll_no))
+
     def load_student_details(self):
         con = sqlite3.connect("rms.db")
         cur = con.cursor()
@@ -266,6 +295,50 @@ class StudentResultPage(QWidget):
         self.txt_full_marks.clear()
         self.txt_course.setCurrentIndex(0)
 
+    def get_gpa_and_grade(self, marks):
+        if marks >= 80:
+            return 4.00, "A+"
+        elif marks >= 75:
+            return 3.75, "A"
+        elif marks >= 70:
+            return 3.50, "A-"
+        elif marks >= 65:
+            return 3.25, "B+"
+        elif marks >= 60:
+            return 3.00, "B"
+        elif marks >= 55:
+            return 2.75, "B-"
+        elif marks >= 50:
+            return 2.50, "C+"
+        elif marks >= 45:
+            return 2.25, "C"
+        elif marks >= 40:
+            return 2.00, "D"
+        else:
+            return 0.00, "F"
+
+
+   
+    def get_courses(self):
+        # Implement logic to fetch courses from the database
+        # and populate the course_combo box.
+        course_list = {}
+        con = sqlite3.connect("rms.db")
+        cursor = con.cursor()
+        try:
+            cursor.execute("SELECT name, duration FROM course")
+            courses = cursor.fetchall()
+            for course in courses:
+                course_list[course[0]] = float(course[1])
+            
+        
+        except sqlite3.Error as e:
+            QMessageBox.critical(self, "Database Error", f"An error occurred: {e}")
+        finally:
+            con.close()
+
+        return course_list
+
     def submit_result(self):
         con = sqlite3.connect("rms.db")
         cur = con.cursor()
@@ -289,11 +362,22 @@ class StudentResultPage(QWidget):
             except ValueError:
                 QMessageBox.warning(self, "Input Error", "Please enter valid numbers for marks.")
                 return
-            percentage = round(percentage, 2)  # Round to 2 decimal places
+            
+            percentage = ceil(percentage)  # Round to 2 decimal places
             percentage = str(percentage) + "%"
-            cur.execute("INSERT INTO result (roll, name, course, marks_ob, full_marks, per) VALUES (?, ?, ?, ?, ?, ?)",
-                        (roll_no, name, course, marks_obtained, full_marks, percentage))
+            # Calculate GPA and Grade
+            gpa, grade = self.get_gpa_and_grade(int(percentage[:-1]))
+            
+            cur.execute("INSERT INTO result (roll, name, course, marks_ob, full_marks, per, grade, gpa) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        (roll_no, name, course, marks_obtained, full_marks, percentage, str(grade), str(gpa)))
             con.commit()
+           
+           # Calculate CGPA
+
+            self.calculate_and_update_cgpa(roll_no, cur)
+            con.commit()
+
+           
             QMessageBox.information(self, "Success", "Result submitted successfully.")
             self.txt_name.clear()
             self.txt_course.setCurrentIndex(0)
@@ -304,6 +388,7 @@ class StudentResultPage(QWidget):
         finally:
             con.close()
         
+    
 
     def get_stylesheet(self):
         return """

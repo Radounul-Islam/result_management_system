@@ -33,10 +33,10 @@ class CourseManager(QWidget):
         self.lbl_course_name = QLabel("Course ID:")
         self.txt_course_id = QLineEdit()
 
-        self.lbl_course_name = QLabel("Course Name:")
+        self.lbl_course_name = QLabel("Course Code:")
         self.txt_course_name = QLineEdit()
 
-        self.lbl_duration = QLabel("Duration:")
+        self.lbl_duration = QLabel("Credit Hours:")
         self.txt_duration = QLineEdit()
 
         self.lbl_charges = QLabel("Charges:")
@@ -87,22 +87,13 @@ class CourseManager(QWidget):
         self.table = QTableWidget()
      
         self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels(["Course ID", "Name", "Duration", "Charges", "Description"])
+        self.table.setHorizontalHeaderLabels(["Course ID", "Name", "Credit Hours", "Charges", "Description"])
         self.table.setColumnWidth(0, 100)
         self.table.setColumnWidth(1, 200)
         self.table.setColumnWidth(2, 100)
         self.table.setColumnWidth(3, 70)
         self.table.setColumnWidth(4, 200)
         
-       
-        
-
-
-
-        
-        
-
-
 
         # Table layout
         table_layout.addLayout(search_layout)
@@ -158,11 +149,25 @@ class CourseManager(QWidget):
 
     def delete_course(self):
         course_name = self.txt_course_name.text().strip()
-        if not course_name:
-            QMessageBox.warning(self, "Input Error", "Please enter the course name to delete.")
-            return
         con = sqlite3.connect("rms.db")
         cursor = con.cursor()
+        if not course_name:
+
+            option = QMessageBox.question(
+                self, "Confirm Delete",
+                f"Are you sure you want to delete all courses?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if option == QMessageBox.No:
+                return
+            cursor.execute("DELETE FROM course")
+            con.commit()
+            QMessageBox.information(self, "Success", "All courses deleted successfully.")
+            self.load_courses()
+            return
+        
+        
         try:
             option = QMessageBox.question(
                 self, "Confirm Delete",
@@ -193,6 +198,14 @@ class CourseManager(QWidget):
         if not course_name:
             QMessageBox.warning(self, "Input Error", "Please enter the course name.")
             return
+        
+        try:
+            duration = float(duration)
+        except ValueError:
+            QMessageBox.warning(self, "Input Error", "Please enter a valid number for credit hours.")
+            return
+        
+        
         con = sqlite3.connect("rms.db")
         cursor = con.cursor()
         try:
@@ -214,10 +227,19 @@ class CourseManager(QWidget):
         duration = self.txt_duration.text().strip()
         charges = self.txt_charges.text().strip()
         description = self.txt_description.toPlainText().strip()
-
+        # Validate inputs
+        
+        
         if not course_name:
             QMessageBox.warning(self, "Input Error", "Please enter the course name.")
             return
+        
+        try:
+            duration = float(duration)
+        except ValueError:
+            QMessageBox.warning(self, "Input Error", "Please enter a valid number for credit hours.")
+            return
+        
         con = sqlite3.connect("rms.db")
         cursor = con.cursor()
         try:
@@ -334,6 +356,7 @@ class CourseManager(QWidget):
             background-color: white;
             border: 2px solid #ccc;
             border-radius: 5px;
+            color: #333;
         }
 
         QHeaderView::section {
