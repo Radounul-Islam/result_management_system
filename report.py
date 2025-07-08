@@ -87,20 +87,13 @@ class StudentReportUI(QWidget):
         self.delete_button = QPushButton("Delete")
         self.delete_button.setObjectName("DeleteButton")
         self.delete_button.setCursor(QCursor(Qt.PointingHandCursor))
-
-        # Transcript Section
-        self.ranscript = QPushButton("Transcript")
-        self.ranscript.setCursor(QCursor(Qt.PointingHandCursor))
-        self.ranscript.setObjectName("TranscriptButton")
-
+        
+        
 
         delete_layout = QHBoxLayout()
         delete_layout.addStretch()
         delete_layout.addWidget(self.delete_button)
         delete_layout.addStretch()
-        delete_layout.addWidget(self.ranscript)
-        delete_layout.addStretch()
-       
 
         main_layout.addLayout(delete_layout)
         self.setLayout(main_layout)
@@ -131,11 +124,9 @@ class StudentReportUI(QWidget):
         self.search_button.clicked.connect(self.search_student)
         self.clear_button.clicked.connect(self.clear_search)
         self.delete_button.clicked.connect(self.delete_student)
-        self.ranscript.clicked.connect(self.generate_transcript)
+       
         
-    def generate_transcript(self):
-        pass
-        
+
 
     def search_student(self):
         roll = self.search_input.text().strip()

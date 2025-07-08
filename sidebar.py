@@ -16,8 +16,9 @@ class SidebarWidget(QListWidget):
         self.addItem("Student")
         self.addItem("Result")
         self.addItem("View Result")
-        self.addItem("Publish Result")
-        self.addItem("Settings")
+
+        self.addItem("Generate Result Files")
+      
         self.setFixedWidth(220)
         self.setCursor(QCursor(Qt.PointingHandCursor))
         

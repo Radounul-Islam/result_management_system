@@ -395,6 +395,7 @@ class StudentResultPage(QWidget):
         QWidget {
         background-color: #f5f5f5;
         font-family: Arial, sans-serif;
+        color: #333;
     }
 
         #titleLabel {
@@ -430,7 +431,8 @@ class StudentResultPage(QWidget):
     }
     QComboBox::drop-down {
         border: 1px solid #cccccc;
-        border-radius: 3px;
+        border-radius: 3px
+        ;
     }
     QComboBox::item {
         background-color: #ffffff;
