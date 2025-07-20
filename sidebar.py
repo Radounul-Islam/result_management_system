@@ -18,6 +18,7 @@ class SidebarWidget(QListWidget):
         self.addItem("View Result")
 
         self.addItem("Generate Result Files")
+        self.addItem("Send Result Email")
       
         self.setFixedWidth(220)
         self.setCursor(QCursor(Qt.PointingHandCursor))

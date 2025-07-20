@@ -14,7 +14,7 @@ from report import StudentReportUI
 from result import StudentResultPage
 from sidebar import SidebarWidget
 from students import StudentDetailsUI
-
+from send_email import SendEmail
 
 from create_db import create_db
 from course import CourseManager
@@ -120,7 +120,7 @@ class StudentManagementUI(QMainWindow):
         buttons_layout.addWidget(self.exit_button)
 
         
-        self.page_classes = [DashBoardWidget, CourseManager, StudentDetailsUI, StudentResultPage, StudentReportUI, GenerateFile, QLabel]
+        self.page_classes = [DashBoardWidget, CourseManager, StudentDetailsUI, StudentResultPage, StudentReportUI, GenerateFile, SendEmail]
       
         # Add pages to the stacked widget
         for page in self.page_classes:
